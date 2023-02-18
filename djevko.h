@@ -44,8 +44,8 @@ struct Djevko {
 //
 
 // todo: is the use of static here correct?
-static Bool sliceEq(char* source, Index aa, Index ab, Index taga, Index tagb);
-static inline Bool sliceEq(char* source, Index aa, Index ab, Index taga, Index tagb) {
+static Bool is_end_tag_found(char* source, Index aa, Index ab, Index taga, Index tagb);
+static inline Bool is_end_tag_found(char* source, Index aa, Index ab, Index taga, Index tagb) {
   Index i = aa, j = taga;
   for (; j < tagb; ++i, ++j) {
     if (source[i] != source[j]) return 0;
@@ -55,8 +55,8 @@ static inline Bool sliceEq(char* source, Index aa, Index ab, Index taga, Index t
   }
   return 1;
 }
-static Size sliceToLen(char* source, Index a, Index b);
-static inline Size sliceToLen(char* source, Index a, Index b) {
+static Size try_parse_len_prefix(char* source, Index a, Index b);
+static inline Size try_parse_len_prefix(char* source, Index a, Index b) {
   Size ret = 0;
   Index i = a;
   while (i < b) {
@@ -178,6 +178,7 @@ inline const char* Bool_as_str(Bool b) {
   return "true";
 }
 
+// todo:
 void vardump(Djevko* j) {
   for (Index i = 0; i < j->len; ++i) {
     char* str = Slice_to_str(j->prefixes[i]);
@@ -230,7 +231,7 @@ inline Djevko* Djevko_parse_len(char* str, size_t len) {
       // todo: put in chr register
       char c = str[i];
       if (c == '\'') {
-        Size len_prefix = sliceToLen(str, j, i);
+        Size len_prefix = try_parse_len_prefix(str, j, i);
         if (len_prefix > 0) {
           i += 1;
           a = i;
@@ -283,10 +284,9 @@ inline Djevko* Djevko_parse_len(char* str, size_t len) {
 
     while (1) {
       if (i >= len) {
-        // todo: .trim() or .trimEnd()
-        if (aposi != -1 && sliceEq(str, aposi, i, taga, tagb)) {
+        if (aposi != -1 && is_end_tag_found(str, aposi, i, taga, tagb)) {
           parent->tag = (Slice){str+taga, tagb-taga};
-          parent->suffix = (Slice){str+j, aposi - 1 - j}; //str.slice(j, aposi - 1)
+          parent->suffix = (Slice){str+j, aposi - 1 - j};
         } else {
           exit(ERR_TAG);
         }
@@ -297,12 +297,12 @@ inline Djevko* Djevko_parse_len(char* str, size_t len) {
         aposi = i + 1;
       }
       else if (aposi != -1) {
-        if (c == '[' && sliceEq(str, aposi, i, taga, tagb)) {
+        if (c == '[' && is_end_tag_found(str, aposi, i, taga, tagb)) {
           a = j;
           b = aposi - 1;
           goto open;
         }
-        else if (c == ']' && sliceEq(str, aposi, i, taga, tagb)) {
+        else if (c == ']' && is_end_tag_found(str, aposi, i, taga, tagb)) {
           a = j;
           b = aposi - 1;
           goto close;
@@ -425,6 +425,7 @@ char* escape(char* str) {
   char* ret = (char*)malloc(maxlen);
 
   snprintf(ret, maxlen, "%s'%s'%s", tag, str, tag);
+  free(tag);
   return ret;
 }
 

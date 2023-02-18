@@ -16,21 +16,25 @@ typedef struct {
   FavColors fav_colors;
 } Person;
 
+// converting a Djevko into an array
 FavColors Djevko_as_fav_colors(Djevko* j) {
+  Djevko_check_suffix_empty(j);
+
   Size len = j->len;
   char** colors = (char**)malloc(len);
 
   for (Index i = 0; i < len; ++i) {
-    Slice s = j->prefixes[i];
     Djevko_check_prefix_empty(j, i);
     colors[i] = Djevko_as_str(&j->subs[i]);
   }
-  Djevko_check_suffix_empty(j);
 
   return (FavColors){colors,len};
 }
 
+// converting a Djevko into a struct
 Person Djevko_as_Person(Djevko* j) {
+  Djevko_check_suffix_empty(j);
+
   Person p = {0,0,0,0};
   
   char seen_keys[4] = {0};
@@ -38,16 +42,18 @@ Person Djevko_as_Person(Djevko* j) {
     Slice s = j->prefixes[i];
 
     if (Slice_equals_key(s, "name", seen_keys, 0)) {
+      // converting a Djevko into a string
       p.name = Djevko_as_str(&j->subs[i]);
     } else if (Slice_equals_key(s, "age", seen_keys, 1)) {
+      // converting a Djevko into an int
       p.age = atoi(Djevko_as_str(&j->subs[i]));
     } else if (Slice_equals_key(s, "is cool", seen_keys, 2)) {
+      // converting a Djevko into a boolean
       p.is_cool = Djevko_as_bool(&j->subs[i]);
     } else if (Slice_equals_key(s, "fav colors", seen_keys, 3)) {
       p.fav_colors = Djevko_as_fav_colors(&j->subs[i]);
     }
   }
-  Djevko_check_suffix_empty(j);
 
   return p;
 }
