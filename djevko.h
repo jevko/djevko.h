@@ -20,7 +20,7 @@ typedef size_t Size;
 typedef int Bool;
 
 typedef struct Slice {
-  char* str; 
+  const char* str; 
   Size len;
 } Slice;
 
@@ -28,7 +28,7 @@ typedef struct Djevko Djevko;
 
 struct Djevko {
   // note: source could be removed
-  char* source; 
+  const char* source; 
   Slice* prefixes; 
   // todo?: Slice* tags;
   Djevko* subs; 
@@ -44,8 +44,8 @@ struct Djevko {
 //
 
 // todo: is the use of static here correct?
-static Bool is_end_tag_found(char* source, Index aa, Index ab, Index taga, Index tagb);
-static inline Bool is_end_tag_found(char* source, Index aa, Index ab, Index taga, Index tagb) {
+static Bool is_end_tag_found(const char* source, Index aa, Index ab, Index taga, Index tagb);
+static inline Bool is_end_tag_found(const char* source, Index aa, Index ab, Index taga, Index tagb) {
   Index i = aa, j = taga;
   for (; j < tagb; ++i, ++j) {
     if (source[i] != source[j]) return 0;
@@ -55,8 +55,8 @@ static inline Bool is_end_tag_found(char* source, Index aa, Index ab, Index taga
   }
   return 1;
 }
-static Size try_parse_len_prefix(char* source, Index a, Index b);
-static inline Size try_parse_len_prefix(char* source, Index a, Index b) {
+static Size try_parse_len_prefix(const char* source, Index a, Index b);
+static inline Size try_parse_len_prefix(const char* source, Index a, Index b) {
   Size ret = 0;
   Index i = a;
   while (i < b) {
@@ -74,8 +74,8 @@ static inline Size try_parse_len_prefix(char* source, Index a, Index b) {
 // exports
 //
 
-Djevko* Djevko_new(char* source);
-inline Djevko* Djevko_new(char* source) {
+Djevko* Djevko_new(const char* source);
+inline Djevko* Djevko_new(const char* source) {
   Djevko* j = (Djevko*)malloc(sizeof *j);
   j->source = source;
   j->prefixes = (Slice*)NULL;
@@ -118,8 +118,8 @@ inline char* Slice_to_str(Slice s) {
   ret[len - 1] = 0;
   return ret;
 }
-Bool Slice_equals_str(Slice s, char* str);
-inline Bool Slice_equals_str(Slice s, char* str) {
+Bool Slice_equals_str(Slice s, const char* str);
+inline Bool Slice_equals_str(Slice s, const char* str) {
   Size len = strlen(str);
   if (s.len != len) return 0;
   for (Index i = 0; i < len; ++i) {
@@ -127,8 +127,8 @@ inline Bool Slice_equals_str(Slice s, char* str) {
   }
   return 1;
 }
-Bool Slice_equals_key(Slice s, char* str, char* f, Index i);
-inline Bool Slice_equals_key(Slice s, char* key, char* seen_keys, Index key_index) {
+Bool Slice_equals_key(Slice s, const char* str, char* f, Index i);
+inline Bool Slice_equals_key(Slice s, const char* key, char* seen_keys, Index key_index) {
   if (Slice_equals_str(s, key)) {
     if (seen_keys[key_index]) {
       printf("Duplicate key: %s", key);
@@ -148,7 +148,6 @@ inline char* Djevko_as_str(Djevko* j) {
 }
 Bool Djevko_as_bool(Djevko* j);
 inline Bool Djevko_as_bool(Djevko* j) {
-  // char* str = Djevko_as_str(j);
   // todo: nicer error
   if (j->len > 0) exit(1);
   Slice s = j->suffix;
@@ -208,8 +207,8 @@ void vardump(Djevko* j) {
   if (len > 0) printf("%zu'%s", len, str);
 }
 
-Djevko* Djevko_parse_len(char* str, size_t len);
-inline Djevko* Djevko_parse_len(char* str, size_t len) {
+Djevko* Djevko_parse_len(const char* str, size_t len);
+inline Djevko* Djevko_parse_len(const char* str, size_t len) {
   size_t i = 0;
   size_t j = 0;
 
@@ -383,8 +382,8 @@ inline Djevko* Djevko_parse_len(char* str, size_t len) {
   }
 }
 
-Djevko* Djevko_parse(char* str);
-inline Djevko* Djevko_parse(char* str) {
+Djevko* Djevko_parse(const char* str);
+inline Djevko* Djevko_parse(const char* str) {
   return Djevko_parse_len(str, strlen(str));
 }
 

@@ -59,7 +59,7 @@ Person Djevko_as_Person(Djevko* j) {
   return p;
 }
 
-Person Person_parse(char* str) {
+Person Person_parse(const char* str) {
   Djevko* j = Djevko_parse(str);
   Person p = Djevko_as_Person(j);
   Djevko_delete(&j);
@@ -83,7 +83,8 @@ void Person_print(Person p, FILE* f) {
 }
 
 int main() {
-  char* str = "name [  Jon Wąpierz 😀  ] age [32] is cool [true] fav colors [[red][green][blue]]   ";
+  const char* str = "name [  Jon Wąpierz 😀  ] age [32] is cool [true] fav colors [[red][green][blue]]   ";
+
   Person p = Person_parse(str);
 
   Person_print(p, stdout);
