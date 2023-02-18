@@ -148,11 +148,25 @@ inline char* Djevko_as_str(Djevko* j) {
 }
 Bool Djevko_as_bool(Djevko* j);
 inline Bool Djevko_as_bool(Djevko* j) {
-  char* str = Djevko_as_str(j);
-  if (strcmp(str, "true") == 0) return 1;
-  if (strcmp(str, "false") == 0) return 0;
+  // char* str = Djevko_as_str(j);
+  // todo: nicer error
+  if (j->len > 0) exit(1);
+  Slice s = j->suffix;
+  if (Slice_equals_str(s, "true")) return 1;
+  if (Slice_equals_str(s, "false")) return 0;
   // todo: nicer error
   exit(1);
+}
+long Djevko_as_long(Djevko* j);
+inline long Djevko_as_long(Djevko* j) {
+  // todo: nicer error
+  if (j->len > 0) exit(1);
+  Slice s = j->suffix;
+  char* endptr;
+  long ret = strtol(s.str, &endptr, 0);
+  // todo: nicer error
+  if (endptr != s.str + s.len) exit(1);
+  return ret;
 }
 
 void Djevko_check_prefix_empty(Djevko* j, Index i);
@@ -314,6 +328,7 @@ inline Djevko* Djevko_parse_len(char* str, size_t len) {
   end:
   if (parents_length > 0) exit(ERR_END);
 
+  free(parents);
   return parent;
 
   open: {
@@ -329,6 +344,10 @@ inline Djevko* Djevko_parse_len(char* str, size_t len) {
       // realloc subs, realloc prefixes:
       parent->prefixes = (Slice*)realloc(parent->prefixes, cap * sizeof(Slice));
       parent->subs = (Djevko*)realloc(parent->subs, cap * sizeof(Djevko));
+
+      // note: not exactly necessary
+      memset(parent->prefixes + len, 0, (cap - len) * sizeof(Slice));
+      memset(parent->subs + len, 0, (cap - len) * sizeof(Djevko));
 
       parent->cap = cap;
     }
@@ -406,6 +425,7 @@ char* escape(char* str) {
       }
       i = j - 1;
       if (eqc > 5) {
+        // todo: extract to len_prefix(str, len)
         Size digits = digit_count(len);
         Size maxlen = digits + 1 + len + 1;
         char* ret = (char*)malloc(maxlen);
