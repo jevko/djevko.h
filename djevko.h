@@ -406,10 +406,10 @@ Size digit_count(Size n) {
   // todo:
   exit(1000);
 }
-// todo: return Slice, accept len + versions which wrap/unwrap args/ret
-char* escape(char* str) {
+
+Slice escape_len(const char* str, Size len);
+inline Slice escape_len(const char* str, Size len) {
   int maxeqc = -1;
-  Size len = strlen(str);
   for (Index i = 0; i < len; ++i) {
     char c = str[i];
     if (maxeqc == -1) {
@@ -429,12 +429,12 @@ char* escape(char* str) {
         Size maxlen = digits + 1 + len + 1;
         char* ret = (char*)malloc(maxlen);
         snprintf(ret, maxlen, "%zu'%s", digits, str);
-        return ret;
+        return (Slice){ret,maxlen-1};
       }
       if (eqc > maxeqc) maxeqc = eqc;
     }
   }
-  if (maxeqc == -1) return str;
+  if (maxeqc == -1) return (Slice){str,len};
   char* tag = (char*)malloc(maxeqc + 1);
   for (Index i = 0; i < maxeqc; ++i) {
     tag[i] = '=';
@@ -445,7 +445,11 @@ char* escape(char* str) {
 
   snprintf(ret, maxlen, "%s'%s'%s", tag, str, tag);
   free(tag);
-  return ret;
+  return (Slice){ret,maxlen-1};
+}
+const char* escape(const char* str);
+inline const char* escape(const char* str) {
+  return escape_len(str, strlen(str)).str;
 }
 
 #endif
