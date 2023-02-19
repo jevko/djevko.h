@@ -1,3 +1,25 @@
+// MIT License
+//
+// Copyright (c) 2023 Darius J Chuck
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 #ifndef DJEVKO_H
 #define DJEVKO_H
 
@@ -6,6 +28,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdint.h>
 
 #define ERR_END 1
 #define ERR_CLOSE 2
@@ -14,6 +37,7 @@
 #define ERR_KEY 16
 #define ERR_PRE 32
 #define ERR_SUF 64
+#define ERR_DIGITS 128
 
 typedef size_t Index;
 typedef size_t Size;
@@ -387,24 +411,33 @@ inline Djevko* Djevko_parse(const char* str) {
   return Djevko_parse_len(str, strlen(str));
 }
 
-// todo:
-Size digit_count(Size n) {
-  if (n < 10) return 1;
-  if (n < 100) return 2;
-  if (n < 1000) return 3;
-  if (n < 10000) return 4;
-  if (n < 100000) return 5;
-  if (n < 1000000) return 6;
-  if (n < 10000000) return 7;
-  if (n < 100000000) return 8;
-  if (n < 1000000000) return 9;
-  if (n < 10000000000) return 10;
-  if (n < 100000000000) return 11;
-  if (n < 1000000000000) return 12;
-  if (n < 10000000000000) return 13;
+Size digit_count(Size n);
+inline Size digit_count(Size n) {
+  if (n < 10u) return 1;
+  if (n < 100u) return 2;
+  if (n < 1000u) return 3;
+  if (n < 10000u) return 4;
+  if (n < 100000u) return 5;
+  if (n < 1000000u) return 6;
+  if (n < 10000000u) return 7;
+  if (n < 100000000u) return 8;
+  if (n < 1000000000u) return 9;
+  if (n < 10000000000u) return 10;
+  if (n < 100000000000u) return 11;
+  if (n < 1000000000000u) return 12;
+  if (n < 10000000000000u) return 13;
+  if (n < 100000000000000u) return 14;
+  if (n < 1000000000000000u) return 15;
+  if (n < 10000000000000000u) return 16;
+  if (n < 100000000000000000u) return 17;
+  if (n < 1000000000000000000u) return 18;
+  if (n < 10000000000000000000u) return 19;
 
-  // todo:
-  exit(1000);
+  // 18446744073709551615
+  if (n <= UINT64_MAX) return 20;
+
+  printf("Number %zu is too large to count its digits!", n);
+  exit(ERR_DIGITS);
 }
 
 Slice escape_len(const char* str, Size len);
