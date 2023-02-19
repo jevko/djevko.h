@@ -39,6 +39,11 @@
 #define ERR_SUF 64
 #define ERR_DIGITS 128
 
+#define OPENER '['
+#define CLOSER ']'
+#define QUOTER '`'
+#define QUOTER_STR "`"
+
 typedef size_t Index;
 typedef size_t Size;
 typedef int Bool;
@@ -267,7 +272,7 @@ inline Djevko* Djevko_parse_len(const char* str, size_t len) {
       }
       // todo: put in chr register
       char c = str[i];
-      if (c == '\'') {
+      if (c == QUOTER) {
         Size len_prefix = try_parse_len_prefix(str, j, i);
         if (len_prefix > 0) {
           i += 1;
@@ -275,10 +280,10 @@ inline Djevko* Djevko_parse_len(const char* str, size_t len) {
           i += len_prefix;
           b = i;
           c = str[i];
-          if (c == '[') {
+          if (c == OPENER) {
             goto open;
           }
-          else if (c == ']') {
+          else if (c == CLOSER) {
             goto close;
           }
           else {
@@ -293,7 +298,7 @@ inline Djevko* Djevko_parse_len(const char* str, size_t len) {
         i += 1;
         break;
       }
-      else if (c == '[') {
+      else if (c == OPENER) {
         a = j;
         b = i;
 
@@ -303,7 +308,7 @@ inline Djevko* Djevko_parse_len(const char* str, size_t len) {
 
         goto open;
       }
-      else if (c == ']') {
+      else if (c == CLOSER) {
         a = j;
         b = i;
 
@@ -330,16 +335,16 @@ inline Djevko* Djevko_parse_len(const char* str, size_t len) {
         goto end;
       }
       char c = str[i];
-      if (c == '\'') {
+      if (c == QUOTER) {
         aposi = i + 1;
       }
       else if (aposi != -1) {
-        if (c == '[' && is_end_tag_found(str, aposi, i, taga, tagb)) {
+        if (c == OPENER && is_end_tag_found(str, aposi, i, taga, tagb)) {
           a = j;
           b = aposi - 1;
           goto open;
         }
-        else if (c == ']' && is_end_tag_found(str, aposi, i, taga, tagb)) {
+        else if (c == CLOSER && is_end_tag_found(str, aposi, i, taga, tagb)) {
           a = j;
           b = aposi - 1;
           goto close;
@@ -446,9 +451,9 @@ inline Slice escape_len(const char* str, Size len) {
   for (Index i = 0; i < len; ++i) {
     char c = str[i];
     if (maxeqc == -1) {
-      if (c == '[' || c == ']') maxeqc = 0;
+      if (c == OPENER || c == CLOSER) maxeqc = 0;
     }
-    if (c == '\'') {
+    if (c == QUOTER) {
       int eqc = 1;
       Index j = i + 1;
       while (str[j] == '=') {
@@ -461,7 +466,7 @@ inline Slice escape_len(const char* str, Size len) {
         Size digits = digit_count(len);
         Size maxlen = digits + 1 + len + 1;
         char* ret = (char*)malloc(maxlen);
-        snprintf(ret, maxlen, "%zu'%s", digits, str);
+        snprintf(ret, maxlen, "%zu" QUOTER_STR "%s", digits, str);
         return (Slice){ret,maxlen-1};
       }
       if (eqc > maxeqc) maxeqc = eqc;
@@ -476,7 +481,7 @@ inline Slice escape_len(const char* str, Size len) {
   Size maxlen = 2*maxeqc+2+len+1;
   char* ret = (char*)malloc(maxlen);
 
-  snprintf(ret, maxlen, "%s'%s'%s", tag, str, tag);
+  snprintf(ret, maxlen, "%s" QUOTER_STR "%s" QUOTER_STR "%s", tag, str, tag);
   free(tag);
   return (Slice){ret,maxlen-1};
 }

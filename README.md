@@ -7,11 +7,10 @@ A variant of Jevko implemented in C which differs from the original in that:
 * it is defined over bytes rather than Unicode code points
 * it uses heredocs and length-prefixing instead of digraphs to "escape" special characters
 * it automatically trims unquoted strings
-* it uses `'` instead of `` ` `` as the third (next to `[` and `]`) special character (this may change)
 
 ## Features
 
-* single-header library
+* single-header library: simply `#include "djevko.h"` and use!
 * provides utility functions to help with (de)serialization, escaping, checking, converting, etc.
 * should be fairly fast (yet to be benchmarked)
 * binary data can be mixed with text data
@@ -53,6 +52,14 @@ And the other way around.
 
 ## Usage
 
+All you need is [djevko.h](djevko.h).
+
 See [example.c](example.c).
 
-It shows how to (de)serialize C structs/arrays/strings/numbers/booleans to/from Djevko
+It shows how to (de)serialize C structs/arrays/strings/numbers/booleans to/from Djevko.
+
+You can compile and run the example with:
+
+```
+gcc example.c && ./a.out 
+```
