@@ -75,7 +75,10 @@ void Person_free(Person p) {
 }
 
 void Person_print(Person p, FILE* f) {
-  fprintf(f, "name [%s]\nage [%d]\nis cool [%s]\nfav colors [\n", escape(p.name), p.age, Bool_as_str(p.is_cool));
+  fprintf(f, "name [%s]\n", escape(p.name));
+  fprintf(f, "age [%d]\n", p.age);
+  fprintf(f, "is cool [%s]\n", Bool_as_str(p.is_cool));
+  fprintf(f, "fav colors [\n");
   for (Index i = 0; i < p.fav_colors.len; ++i) {
     fprintf(f, "  [%s]\n", p.fav_colors.colors[i]);
   }
@@ -83,7 +86,15 @@ void Person_print(Person p, FILE* f) {
 }
 
 int main() {
-  const char* str = "name [  Jon Wąpierz 😀  ] age [32] is cool [true] fav colors [[red][green][blue]]   ";
+  const char* str = 
+    "name [  Jon Wąpierz 😀  ]"
+    "age [32]"
+    "is cool [true]"
+    "fav colors ["
+      "[red]"
+      "[green]"
+      "[blue]"
+    "]";
 
   Person p = Person_parse(str);
 
