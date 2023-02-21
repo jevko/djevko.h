@@ -30,9 +30,11 @@ Here we chose `=` as the tag. Now if we wanted to put a `=` before the `]` as we
 allowed characters [==`0123456789[`=]`==]
 ```
 
+Here we chose `==` as the tag.
+
 ## Rules for tags
 
-Here we chose `==` as the tag. We can pick any tag we like, provided it doesn't contain the special characters `[`, `]`, or `` ` ``.
+We can pick any tag we like, provided it doesn't contain the special characters `[`, `]`, or `` ` ``.
 
 Tags which are integers (e.g. `10`) are exceptional -- they indicate [length-prefixed strings](#length-prefixed-strings) which work differently than heredocs described above.
 
