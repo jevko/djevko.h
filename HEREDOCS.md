@@ -139,4 +139,4 @@ So what's the advantage? It's much faster for machine-generated data that doesn'
 
 So length-prefixed strings can work well for storing binary data, as a much faster alternative to base64 or the like.
 
-Keep in mind however that most text editors won't be able to edit your binary files directly without corrupting them. Reading however will might still be possible.
+Keep in mind however that most text editors won't be able to edit your binary files directly without corrupting them. Reading however might still be possible.
