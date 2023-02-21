@@ -18,7 +18,7 @@ We could even include the `` ` `` character itself, provided that we don't put i
 allowed characters [`0123456789[]``]
 ```
 
-What if we had to put it before the `]` though? Simply precede the opening `` ` `` with a [tag of your choice](#Tags) and put a matching tag after the closing `` ` ``:
+What if we had to put it before the `]` though? Simply precede the opening `` ` `` with a [tag of your choice](#rules-for-tags) and put a matching tag after the closing `` ` ``:
 
 ```
 allowed characters [=`0123456789[`]`=]
@@ -29,6 +29,8 @@ Here we chose `=` as the tag. Now if we wanted to put a `=` before the `]` as we
 ```
 allowed characters [==`0123456789[`=]`==]
 ```
+
+## Rules for tags
 
 Here we chose `==` as the tag. We can pick any tag we like, provided it doesn't contain the special characters `[`, `]`, or `` ` ``.
 
