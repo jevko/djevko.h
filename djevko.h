@@ -47,9 +47,10 @@
 typedef size_t Index;
 typedef size_t Size;
 typedef int Bool;
+typedef const char* Str;
 
 typedef struct Slice {
-  const char* str; 
+  Str str; 
   Size len;
 } Slice;
 
@@ -57,10 +58,10 @@ typedef struct Djevko Djevko;
 
 struct Djevko {
   // note: source could be removed
-  const char* source; 
+  Str source; 
   Slice* prefixes; 
   // todo?: Slice* tags;
-  Djevko* subs; 
+  Djevko** subs; 
   Size len; 
   Size cap;
   // note: null tag has tag.str = NULL
@@ -72,9 +73,8 @@ struct Djevko {
 // internal
 //
 
-// todo: is the use of static here correct?
-static Bool is_end_tag_found(const char* source, Index aa, Index ab, Index taga, Index tagb);
-static inline Bool is_end_tag_found(const char* source, Index aa, Index ab, Index taga, Index tagb) {
+static Bool is_end_tag_found(Str source, Index aa, Index ab, Index taga, Index tagb);
+static inline Bool is_end_tag_found(Str source, Index aa, Index ab, Index taga, Index tagb) {
   Index i = aa, j = taga;
   for (; j < tagb; ++i, ++j) {
     if (source[i] != source[j]) return 0;
@@ -84,8 +84,8 @@ static inline Bool is_end_tag_found(const char* source, Index aa, Index ab, Inde
   }
   return 1;
 }
-static Size try_parse_len_prefix(const char* source, Index a, Index b);
-static inline Size try_parse_len_prefix(const char* source, Index a, Index b) {
+static Size try_parse_len_prefix(Str source, Index a, Index b);
+static inline Size try_parse_len_prefix(Str source, Index a, Index b) {
   Size ret = 0;
   Index i = a;
   while (i < b) {
@@ -103,14 +103,14 @@ static inline Size try_parse_len_prefix(const char* source, Index a, Index b) {
 // exports
 //
 
-Djevko* Djevko_new(const char* source);
-inline Djevko* Djevko_new(const char* source) {
+Djevko* Djevko_new(Str source);
+inline Djevko* Djevko_new(Str source) {
   Djevko* j = (Djevko*)malloc(sizeof *j);
   j->source = source;
   j->prefixes = (Slice*)NULL;
   // ?todo:
   // j->tags = (Slice*)NULL;
-  j->subs = (Djevko*)NULL;
+  j->subs = (Djevko**)NULL;
   j->len = 0;
   j->cap = 0;
   // ?
@@ -119,19 +119,18 @@ inline Djevko* Djevko_new(const char* source) {
   j->suffix = (Slice){0,0};
   return j;
 }
-// todo:
+void Djevko_delete(Djevko** jptr);
 void Djevko_sub_delete(Djevko* j);
 inline void Djevko_sub_delete(Djevko* j) {
   // free(j->source);
   free(j->prefixes);
   // ?todo:
   // j->tags
-  for (Index i = 0; i < j->cap; ++i) {
-    Djevko_sub_delete(&j->subs[i]);
+  for (Index i = 0; i < j->len; ++i) {
+    Djevko_delete(&j->subs[i]);
   }
   free(j->subs);
 }
-void Djevko_delete(Djevko** jptr);
 inline void Djevko_delete(Djevko** jptr) {
   Djevko* j = *jptr;
   Djevko_sub_delete(j);
@@ -147,8 +146,8 @@ inline char* Slice_to_str(Slice s) {
   ret[len - 1] = 0;
   return ret;
 }
-Bool Slice_equals_str(Slice s, const char* str);
-inline Bool Slice_equals_str(Slice s, const char* str) {
+Bool Slice_equals_str(Slice s, Str str);
+inline Bool Slice_equals_str(Slice s, Str str) {
   Size len = strlen(str);
   if (s.len != len) return 0;
   for (Index i = 0; i < len; ++i) {
@@ -156,8 +155,8 @@ inline Bool Slice_equals_str(Slice s, const char* str) {
   }
   return 1;
 }
-Bool Slice_equals_key(Slice s, const char* str, char* f, Index i);
-inline Bool Slice_equals_key(Slice s, const char* key, char* seen_keys, Index key_index) {
+Bool Slice_equals_key(Slice s, Str str, char* f, Index i);
+inline Bool Slice_equals_key(Slice s, Str key, char* seen_keys, Index key_index) {
   if (Slice_equals_str(s, key)) {
     if (seen_keys[key_index]) {
       printf("Duplicate key: %s", key);
@@ -180,8 +179,8 @@ inline Bool Djevko_as_bool(Djevko* j) {
   // todo: nicer error
   if (j->len > 0) exit(1);
   Slice s = j->suffix;
-  if (Slice_equals_str(s, "true")) return 1;
-  if (Slice_equals_str(s, "false")) return 0;
+  if (Slice_equals_str(s, (Str)"true")) return 1;
+  if (Slice_equals_str(s, (Str)"false")) return 0;
   // todo: nicer error
   exit(1);
 }
@@ -200,7 +199,7 @@ inline long Djevko_as_long(Djevko* j) {
 void Djevko_check_prefix_empty(Djevko* j, Index i);
 inline void Djevko_check_prefix_empty(Djevko* j, Index i) {
   Slice s = j->prefixes[i];
-  if (Slice_equals_str(s, "") == 0) {
+  if (Slice_equals_str(s, (Str)"") == 0) {
     printf("Expected prefix #%zu to be empty! Got: %s", i, Slice_to_str(s));
     exit(ERR_PRE);
   }
@@ -208,55 +207,35 @@ inline void Djevko_check_prefix_empty(Djevko* j, Index i) {
 void Djevko_check_suffix_empty(Djevko* j);
 inline void Djevko_check_suffix_empty(Djevko* j) {
   Slice s = j->suffix;
-  if (Slice_equals_str(j->suffix, "") == 0) {
+  if (Slice_equals_str(j->suffix, (Str)"") == 0) {
     printf("Expected suffix to be empty! Got: %s", Slice_to_str(s));
     exit(ERR_SUF);
   }
 }
 
-const char* Bool_as_str(Bool b);
-inline const char* Bool_as_str(Bool b) {
-  if (b == 0) return "false";
-  return "true";
+Str Bool_as_str(Bool b);
+inline Str Bool_as_str(Bool b) {
+  if (b == 0) return (Str)"false";
+  return (Str)"true";
 }
 
-// todo:
-void vardump(Djevko* j) {
-  for (Index i = 0; i < j->len; ++i) {
-    char* str = Slice_to_str(j->prefixes[i]);
-    Size len = strlen(str);
-    if (len > 0) printf("%zu'%s", len, str);
-
-    printf("[");
-    vardump(&j->subs[i]);
-    printf("]");
-  }
-  char* str = Slice_to_str(j->suffix);
-  Size len = strlen(str);
-  if (len > 0) printf("%zu'%s", len, str);
-}
-
-Djevko* Djevko_parse_len(const char* str, size_t len);
-inline Djevko* Djevko_parse_len(const char* str, size_t len) {
-  size_t i = 0;
-  size_t j = 0;
+Djevko* Djevko_parse_len(Str str, Size len);
+inline Djevko* Djevko_parse_len(Str str, Size len) {
+  Index i = 0;
 
   // note: these could be registers
-  size_t a = 0;
-  size_t b = 0;
-  size_t aposi = -1;
+  Index a = 0;
+  Index b = 0;
+  Index aposi = -1;
 
   Index taga, tagb;
   Djevko* parent = Djevko_new(str);
 
-  size_t parents_capacity = 8;
-  size_t parents_length = 0;
+  Size parents_capacity = 8;
+  Size parents_length = 0;
   Djevko** parents = (Djevko**)malloc(parents_capacity * sizeof(Djevko*));
 
   outer: while (i < len) {
-    taga = 0;
-    tagb = 0;
-
     // skip to first nonspace, set j to that
     while (1) {
       if (i >= len) break;
@@ -264,21 +243,33 @@ inline Djevko* Djevko_parse_len(const char* str, size_t len) {
       if (isspace(c) == 0) break;
       i += 1;
     }
-    j = i;
+    a = i;
     while (1) {
       if (i >= len) {
-        parent->suffix = (Slice){str+j,i-j};
+        parent->suffix = (Slice){str+a,i-a};
         goto end;
       }
       // todo: put in chr register
       char c = str[i];
       if (c == QUOTER) {
-        Size len_prefix = try_parse_len_prefix(str, j, i);
+        Size len_prefix = try_parse_len_prefix(str, a, i);
         if (len_prefix > 0) {
           i += 1;
           a = i;
           i += len_prefix;
           b = i;
+
+          // skip all space after length-prefixed bytes
+          while (1) {
+            if (i >= len) {
+              // todo: expected at least i - len bytes more
+              exit(1);
+            }
+            c = str[i];
+            if (isspace(c) == 0) break;
+            i += 1;
+          }
+
           c = str[i];
           if (c == OPENER) {
             goto open;
@@ -293,13 +284,12 @@ inline Djevko* Djevko_parse_len(const char* str, size_t len) {
           }
         }
 
-        taga = j; 
+        taga = a; 
         tagb = i;
         i += 1;
         break;
       }
       else if (c == OPENER) {
-        a = j;
         b = i;
 
         while (b > a && isspace(str[b - 1])) {
@@ -309,7 +299,6 @@ inline Djevko* Djevko_parse_len(const char* str, size_t len) {
         goto open;
       }
       else if (c == CLOSER) {
-        a = j;
         b = i;
 
         while (b > a && isspace(str[b - 1])) {
@@ -322,13 +311,13 @@ inline Djevko* Djevko_parse_len(const char* str, size_t len) {
     }
 
     aposi = -1;
-    j = i;
+    a = i;
 
     while (1) {
       if (i >= len) {
         if (aposi != -1 && is_end_tag_found(str, aposi, i, taga, tagb)) {
           parent->tag = (Slice){str+taga, tagb-taga};
-          parent->suffix = (Slice){str+j, aposi - 1 - j};
+          parent->suffix = (Slice){str+a, aposi - 1 - a};
         } else {
           exit(ERR_TAG);
         }
@@ -340,12 +329,10 @@ inline Djevko* Djevko_parse_len(const char* str, size_t len) {
       }
       else if (aposi != -1) {
         if (c == OPENER && is_end_tag_found(str, aposi, i, taga, tagb)) {
-          a = j;
           b = aposi - 1;
           goto open;
         }
         else if (c == CLOSER && is_end_tag_found(str, aposi, i, taga, tagb)) {
-          a = j;
           b = aposi - 1;
           goto close;
         }
@@ -371,17 +358,19 @@ inline Djevko* Djevko_parse_len(const char* str, size_t len) {
       }
       // realloc subs, realloc prefixes:
       parent->prefixes = (Slice*)realloc(parent->prefixes, cap * sizeof(Slice));
-      parent->subs = (Djevko*)realloc(parent->subs, cap * sizeof(Djevko));
+      parent->subs = (Djevko**)realloc(parent->subs, cap * sizeof(Djevko*));
 
       // note: not exactly necessary
       memset(parent->prefixes + len, 0, (cap - len) * sizeof(Slice));
-      memset(parent->subs + len, 0, (cap - len) * sizeof(Djevko));
+      memset(parent->subs + len, 0, (cap - len) * sizeof(Djevko*));
 
       parent->cap = cap;
     }
     // ?
     parent->prefixes[len] = (Slice){str+a,b-a};
-    parent->subs[len] = (Djevko){str, NULL, NULL, 0, 0, {0, 0}, {0, 0}};
+
+    Djevko* t = Djevko_new(str);
+    parent->subs[len] = t;
     parent->len += 1;
 
     // push parent
@@ -392,7 +381,7 @@ inline Djevko* Djevko_parse_len(const char* str, size_t len) {
     parents[parents_length] = parent;
     parents_length += 1;
 
-    parent = &parent->subs[len];
+    parent = t;
     i += 1;
     goto outer;
   }
@@ -411,8 +400,8 @@ inline Djevko* Djevko_parse_len(const char* str, size_t len) {
   }
 }
 
-Djevko* Djevko_parse(const char* str);
-inline Djevko* Djevko_parse(const char* str) {
+Djevko* Djevko_parse(Str str);
+inline Djevko* Djevko_parse(Str str) {
   return Djevko_parse_len(str, strlen(str));
 }
 
@@ -445,8 +434,8 @@ inline Size digit_count(Size n) {
   exit(ERR_DIGITS);
 }
 
-Slice escape_len(const char* str, Size len);
-inline Slice escape_len(const char* str, Size len) {
+Slice escape_len(Str str, Size len);
+inline Slice escape_len(Str str, Size len) {
   int maxeqc = -1;
   for (Index i = 0; i < len; ++i) {
     char c = str[i];
@@ -472,7 +461,10 @@ inline Slice escape_len(const char* str, Size len) {
       if (eqc > maxeqc) maxeqc = eqc;
     }
   }
-  if (maxeqc == -1) return (Slice){str,len};
+  // note: because of this path, str is not guaranteed to be null-terminated here -- it is returned unchanged
+  if (maxeqc == -1) {
+    return (Slice){str,len};
+  }
   char* tag = (char*)malloc(maxeqc + 1);
   for (Index i = 0; i < maxeqc; ++i) {
     tag[i] = '=';
@@ -485,9 +477,73 @@ inline Slice escape_len(const char* str, Size len) {
   free(tag);
   return (Slice){ret,maxlen-1};
 }
-const char* escape(const char* str);
-inline const char* escape(const char* str) {
+Str escape(Str str);
+inline Str escape(Str str) {
   return escape_len(str, strlen(str)).str;
+}
+
+void Djevko_print(Djevko* j, FILE* f);
+inline void Djevko_print(Djevko* j, FILE* f) {
+  for (Index i = 0; i < j->len; ++i) {
+    Slice s = j->prefixes[i];
+    Str a = Slice_to_str(s);
+    Str b = escape_len(a, s.len).str;
+    fprintf(f, "%s[", b);
+    if (a != b) free((char*)b);
+    free((char*)a);
+    Djevko_print(j->subs[i], f);
+    fprintf(f, "]");
+  }
+  Slice s = j->suffix;
+  Str a = Slice_to_str(s);
+  Str b = escape_len(a, s.len).str;
+  fprintf(f, "%s", b);
+  if (a != b) free((char*)b);
+  free((char*)a);
+}
+
+void Djevko_pretty_print_indent(Djevko* j, FILE* f, Size indent);
+inline void Djevko_pretty_print_indent(Djevko* j, FILE* f, Size indent) {
+  Size len = j->len;
+  if (len > 0) {
+    fputc('\n', f);
+    for (Index i = 0; i < len; ++i) {
+      Slice* s = &j->prefixes[i];
+      for (Index i = 0; i < indent; ++i) fputc(' ', f);
+      if (s->len > 0) {
+        Slice e = escape_len(s->str, s->len);
+        fwrite(e.str, 1, e.len, f);
+        fputc(' ', f);
+        if (e.str != s->str) free((char*)e.str);
+      }
+      fputc('[', f);
+      Djevko_pretty_print_indent(j->subs[i], f, indent + 2);
+      fputs("]\n", f);
+    }
+  }
+  Slice* s = &j->suffix;
+  Slice e = escape_len(s->str, s->len);
+  fwrite(e.str, 1, e.len, f);
+  if (e.str != s->str) free((char*)e.str);
+}
+void Djevko_pretty_print(Djevko* j, FILE* f);
+inline void Djevko_pretty_print(Djevko* j, FILE* f) {
+  for (Index i = 0; i < j->len; ++i) {
+    Slice* s = &j->prefixes[i];
+    if (s->len > 0) {
+      Slice e = escape_len(s->str, s->len);
+      fwrite(e.str, 1, e.len, f);
+      fputc(' ', f);
+      if (e.str != s->str) free((char*)e.str);
+    }
+    fputc('[', f);
+    Djevko_pretty_print_indent(j->subs[i], f, 2);
+    fputs("]\n", f);
+  }
+  Slice* s = &j->suffix;
+  Slice e = escape_len(s->str, s->len);
+  fwrite(e.str, 1, e.len, f);
+  if (e.str != s->str) free((char*)e.str);
 }
 
 #endif
