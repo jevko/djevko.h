@@ -25,7 +25,7 @@ FavColors Djevko_as_fav_colors(Djevko* j) {
 
   for (Index i = 0; i < len; ++i) {
     Djevko_check_prefix_empty(j, i);
-    colors[i] = Djevko_as_str(&j->subs[i]);
+    colors[i] = Djevko_as_str(j->subs[i]);
   }
 
   return (FavColors){colors,len};
@@ -43,23 +43,23 @@ Person Djevko_as_Person(Djevko* j) {
 
     if (Slice_equals_key(s, "name", seen_keys, 0)) {
       // converting a Djevko into a string
-      p.name = Djevko_as_str(&j->subs[i]);
+      p.name = Djevko_as_str(j->subs[i]);
     } else if (Slice_equals_key(s, "age", seen_keys, 1)) {
       // converting a Djevko into an integer
-      p.age = Djevko_as_long(&j->subs[i]);
+      p.age = Djevko_as_long(j->subs[i]);
     } else if (Slice_equals_key(s, "is cool", seen_keys, 2)) {
       // converting a Djevko into a boolean
-      p.is_cool = Djevko_as_bool(&j->subs[i]);
+      p.is_cool = Djevko_as_bool(j->subs[i]);
     } else if (Slice_equals_key(s, "fav colors", seen_keys, 3)) {
       // converting a Djevko into a custom value
-      p.fav_colors = Djevko_as_fav_colors(&j->subs[i]);
+      p.fav_colors = Djevko_as_fav_colors(j->subs[i]);
     }
   }
 
   return p;
 }
 
-Person Person_parse(const char* str) {
+Person Person_parse(Str str) {
   Djevko* j = Djevko_parse(str);
   Person p = Djevko_as_Person(j);
   Djevko_delete(&j);
@@ -75,12 +75,15 @@ void Person_free(Person p) {
 }
 
 void Person_print(Person p, FILE* f) {
-  fprintf(f, "name [%s]\n", escape(p.name));
+  // assume p.name doesn't contain special characters [`] -- otherwise we'd have to escape(p.name)
+  fprintf(f, "name [%s]\n", p.name);
   fprintf(f, "age [%d]\n", p.age);
   fprintf(f, "is cool [%s]\n", Bool_as_str(p.is_cool));
   fprintf(f, "fav colors [\n");
   for (Index i = 0; i < p.fav_colors.len; ++i) {
-    fprintf(f, "  [%s]\n", p.fav_colors.colors[i]);
+    char* color = p.fav_colors.colors[i];
+    // assume color doesn't contain special characters [`] -- otherwise we'd have to escape(color)
+    fprintf(f, "  [%s]\n", color);
   }
   fprintf(f, "]\n");
 }
