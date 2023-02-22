@@ -8,6 +8,8 @@ A variant of Jevko implemented in C which differs from the original in that:
 * it uses [heredocs and length-prefixing](HEREDOCS.md) instead of digraphs to "escape" special characters
 * it automatically trims unquoted strings
 
+## [Rationale](RATIONALE.md)
+
 ## Features
 
 * single-header library: simply `#include "djevko.h"` and use!
